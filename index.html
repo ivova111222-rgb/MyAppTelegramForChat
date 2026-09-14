@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Chat Controller Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #181818);
+            --text-color: var(--tg-theme-text-color, #ffffff);
+            --hint-color: var(--tg-theme-hint-color, #888888);
+            --button-color: var(--tg-theme-button-color, #2ea6ff);
+            --button-text-color: var(--tg-theme-button-text-color, #ffffff);
+            --card-bg: var(--tg-theme-secondary-bg-color, #242424);
+            --danger-color: #ff4b4b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 12px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 10px 14px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--button-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 12px;
+            overflow: hidden;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-info .name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .user-info .status {
+            font-size: 0.75rem;
+            color: var(--hint-color);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .card-desc {
+            font-size: 0.75rem;
+            color: var(--hint-color);
+            margin-top: 2px;
+        }
+
+        /* Toggle switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #555;
+            transition: .2s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .2s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--button-color); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .section {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--hint-color);
+            border-radius: 8px;
+            padding: 8px;
+            margin-top: 6px;
+            resize: none;
+            font-family: inherit;
+            height: 45px;
+            box-sizing: border-box;
+            font-size: 0.85rem;
+        }
+
+        textarea:focus { outline: none; border-color: var(--button-color); }
+
+        .btn-danger {
+            background-color: rgba(255, 75, 75, 0.15);
+            color: var(--danger-color);
+            border: none;
+            border-radius: 10px;
+            padding: 10px;
+            width: 100%;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 4px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Шапка профиля собеседника -->
+    <div class="header">
+        <div class="avatar" id="userAvatar">U</div>
+        <div class="user-info">
+            <div class="name" id="userName">Собеседник</div>
+            <div class="status" id="userStatus">Прямое управление чатом</div>
+        </div>
+    </div>
+
+    <!-- Мут -->
+    <div class="card">
+        <div>
+            <div class="card-title">Мут (Игнорирование)</div>
+            <div class="card-desc">Блокировать входящие уведомления от юзера</div>
+        </div>
+        <label class="switch">
+            <input type="checkbox" id="mute" onchange="saveConfig()">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <!-- Антиспам -->
+    <div class="card">
+        <div>
+            <div class="card-title">Анти-спам фильтр</div>
+            <div class="card-desc">Фильтрация одинаковых сообщений</div>
+        </div>
+        <label class="switch">
+            <input type="checkbox" id="antispam" onchange="saveConfig()">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <!-- Автоответчик -->
+    <div class="card">
+        <div>
+            <div class="card-title">Автоответчик</div>
+            <div class="card-desc">Авто-отправка текста при занятости</div>
+        </div>
+        <label class="switch">
+            <input type="checkbox" id="autoreply" onchange="saveConfig()">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <!-- Текст автоответчика -->
+    <div class="section">
+        <div class="card-title">Текст автоответчика</div>
+        <textarea id="autotext" placeholder="Введите сообщение..." oninput="saveConfig()">Я сейчас занят, отвечу позже.</textarea>
+    </div>
+
+    <!-- Экстренная кнопка -->
+    <button class="btn-danger" onclick="clearHistoryLocal()">Очистить локальный кэш чата</button>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Получаем параметры из initData или URL (если открыто из чата через Direct Link)
+        const initDataUnsafe = tg.initDataUnsafe || {};
+        const user = initDataUnsafe.user;
+        
+        // Ключ для хранения настроек конкретного юзера в localStorage телефона
+        const targetUserId = user ? user.id : 'default_peer';
+        const storageKey = `chat_ctrl_${targetUserId}`;
+
+        // Инициализация интерфейса данными юзера, если они есть
+        if (user) {
+            document.getElementById('userName').textContent = `${user.first_name} ${user.last_name || ''}`.trim();
+            if (user.username) {
+                document.getElementById('userStatus').textContent = `@${user.username}`;
+            }
+            if (user.photo_url) {
+                document.getElementById('userAvatar').innerHTML = `<img src="${user.photo_url}" alt="">`;
+            } else {
+                document.getElementById('userAvatar').textContent = user.first_name.charAt(0);
+            }
+        }
+
+        // Загрузка настроек
+        function loadConfig() {
+            const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
+            document.getElementById('mute').checked = saved.mute || false;
+            document.getElementById('antispam').checked = saved.antispam || false;
+            document.getElementById('autoreply').checked = saved.autoreply || false;
+            if (saved.autotext) {
+                document.getElementById('autotext').value = saved.autotext;
+            }
+        }
+
+        // Сохранение настроек локально и передача в Telegram MainButton / Data
+        function saveConfig() {
+            const config = {
+                mute: document.getElementById('mute').checked,
+                antispam: document.getElementById('antispam').checked,
+                autoreply: document.getElementById('autoreply').checked,
+                autotext: document.getElementById('autotext').value,
+                targetUser: targetUserId
+            };
+
+            localStorage.setItem(storageKey, JSON.stringify(config));
+
+            // Показываем кнопку сохранения в интерфейсе Telegram Mini App
+            tg.MainButton.text = "Сохранить параметры";
+            tg.MainButton.show();
+            tg.MainButton.onClick(() => {
+                tg.sendData(JSON.stringify(config));
+                tg.close();
+            });
+        }
+
+        function clearHistoryLocal() {
+            localStorage.removeItem(storageKey);
+            tg.showAlert('Локальный кэш и настройки для этого чата сброшены.');
+        }
+
+        loadConfig();
+    </script>
+</body>
+</html>
